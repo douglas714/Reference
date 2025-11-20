@@ -108,13 +108,13 @@ export const AuthProvider = ({ children }) => {
               phone: phone,
               cpf: cpf,
               balance: 0,
-              monthly_profit: 0,
-              accumulated_profit: 0,
+              // monthly_profit: 0, // Removido: Coluna não existe na migração SQL
+              // accumulated_profit: 0, // Removido: Coluna não existe na migração SQL
               status: 'active',
               contract_accepted: false,
               Categoria: 'cliente',
               indicacao: consultantName,
-              referred_by_code: cleanReferralCode, // Usar o código limpo
+              referred_by_code: cleanReferralCode,
               initial_balance: 0,
             }
           ])
