@@ -55,6 +55,7 @@ export default function ReferralPage() {
 
       // 2. Buscar todos os clientes indicados por este consultor
       // Buscar por código de referência OU por nome no campo indicacao
+      // O filtro por Categoria='cliente' foi removido para incluir clientes que viraram consultores
       const { data: referralsByCode, error: errorByCode } = await supabase
         .from('profiles')
         .select('*')
@@ -313,6 +314,12 @@ export default function ReferralPage() {
                           <div>
                             <p className="font-medium text-gray-900">{referral.name}</p>
                             <p className="text-xs text-gray-500">{referral.email}</p>
+                            {/* NOVO: Exibir a categoria se não for cliente */}
+                            {referral.Categoria !== 'cliente' && (
+                                <Badge variant="secondary" className="mt-1">
+                                    {referral.Categoria}
+                                </Badge>
+                            )}
                           </div>
                         </td>
                         <td className="text-right py-3 px-4 text-gray-700">
