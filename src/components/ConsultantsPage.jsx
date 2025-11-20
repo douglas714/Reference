@@ -32,7 +32,8 @@ export default function ConsultantsPage() {
     try {
       setLoading(true)
 
-      // Buscar estatísticas de consultores da View
+      // Buscar estatísticas de consultores da View corrigida
+      // A view agora deve estar corrigida para considerar ambos os campos e o trim
       const { data: statsData, error: statsError } = await supabase
         .from('referral_stats')
         .select('*')
@@ -43,15 +44,15 @@ export default function ConsultantsPage() {
         alert(`Erro ao buscar estatísticas de consultores: ${statsError.message}. Verifique as políticas RLS.`)
         return
       }
-      console.log('Estatísticas de Consultores do Supabase:', statsData)
-
+      
       const consultantsWithStats = (statsData || []).map(stat => ({
         id: stat.consultant_id,
         name: stat.consultant_name,
         email: stat.consultant_email,
         referral_code: stat.referral_code,
         referralCount: stat.total_referrals,
-        monthlyEarnings: stat.total_earnings,
+        // Usar total_earnings da view, que deve estar correta
+        monthlyEarnings: stat.total_earnings, 
         consultant_earnings: stat.consultant_earnings,
         last_earnings_reset: stat.last_earnings_reset
       }))
@@ -243,7 +244,7 @@ export default function ConsultantsPage() {
                       </td>
                       <td className="text-center py-3 px-4">
                         <Badge variant="outline" className="font-mono">
-                          {consultant.referral_code}
+                          {consultant.referral_code || 'N/A'}
                         </Badge>
                       </td>
                       <td className="text-center py-3 px-4">
