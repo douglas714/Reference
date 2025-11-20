@@ -36,7 +36,6 @@ export const AuthProvider = ({ children }) => {
   };
 
 
-
   const signIn = async (email, password) => {
     try {
       setLoading(true)
@@ -65,6 +64,28 @@ export const AuthProvider = ({ children }) => {
       setLoading(true)
       console.log('useAuth: Tentativa de cadastro com:', email)
       
+      // 1. Limpar o código de referência antes de usar
+      const cleanReferralCode = referralCode ? referralCode.trim() : null
+
+      // 2. Buscar o consultor pelo código limpo
+      let consultantName = null
+      if (cleanReferralCode) {
+        const { data: consultant, error: consultantError } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('referral_code', cleanReferralCode)
+          .eq('Categoria', 'consultor')
+          .single()
+        
+        if (!consultantError && consultant) {
+          consultantName = consultant.name
+          console.log('Consultor encontrado:', consultantName)
+        } else {
+          console.log('Código de referência inválido ou consultor não encontrado. Erro:', consultantError)
+        }
+      }
+
+      // 3. Cadastrar o usuário no Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -75,26 +96,8 @@ export const AuthProvider = ({ children }) => {
         return { error }
       }
       
-      // Criar perfil do usuário
+      // 4. Criar perfil do usuário
       if (data.user) {
-        // Se houver código de referência, buscar o consultor
-        let consultantName = null
-        if (referralCode) {
-          const { data: consultant, error: consultantError } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('referral_code', referralCode)
-            .eq('Categoria', 'consultor') // Corrigido para 'Categoria'
-            .single()
-          
-          if (!consultantError && consultant) {
-            consultantName = consultant.name
-            console.log('Consultor encontrado:', consultantName)
-          } else {
-            console.log('Código de referência inválido ou consultor não encontrado. Erro:', consultantError)
-          }
-        }
-
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -109,10 +112,10 @@ export const AuthProvider = ({ children }) => {
               accumulated_profit: 0,
               status: 'active',
               contract_accepted: false,
-              Categoria: 'cliente', // Corrigido para 'Categoria'
+              Categoria: 'cliente',
               indicacao: consultantName,
-              referred_by_code: referralCode || null,
-              initial_balance: 0, // Usar 0 para evitar problemas de formato decimal/string
+              referred_by_code: cleanReferralCode, // Usar o código limpo
+              initial_balance: 0,
             }
           ])
         
