@@ -34,7 +34,7 @@ export default function ReferralPage() {
   // Buscar indicados do consultor
   useEffect(() => {
   const fetchReferrals = async () => {
-    if (!profile?.referral_code) return
+    if (!profile?.referral_code && !profile?.name) return
 
     try {
       setLoading(true)
@@ -43,7 +43,7 @@ export default function ReferralPage() {
       const { data: statsData, error: statsError } = await supabase
         .from('referral_stats')
         .select('total_referrals, total_profit, total_earnings')
-        .eq('referral_code', profile.referral_code)
+        .eq('referral_code', profile.referral_code?.trim())
         .single()
 
       if (statsError) {
@@ -54,19 +54,61 @@ export default function ReferralPage() {
       const stats = statsData || { total_referrals: 0, total_earnings: 0 }
 
       // 2. Buscar todos os clientes indicados por este consultor
-      const { data: referralsData, error: referralsError } = await supabase
+      // Buscar por código de referência OU por nome no campo indicacao
+      const { data: referralsByCode, error: errorByCode } = await supabase
         .from('profiles')
         .select('*')
-        .eq('referred_by_code', profile.referral_code)
+        .or(`referred_by_code.eq.${profile.referral_code?.trim()},indicacao.eq.${profile.name?.trim()}`)
         .order('created_at', { ascending: false })
 
-      if (referralsError) {
-        console.error('Erro ao buscar indicados:', referralsError)
-        alert(`Erro ao buscar indicados: ${referralsError.message}. Verifique as políticas RLS.`)
+      if (errorByCode) {
+        console.error('Erro ao buscar indicados:', errorByCode)
+        
+        // Tentar busca alternativa caso a primeira falhe
+        const { data: referralsData, error: referralsError } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false })
+        
+        if (referralsError) {
+          alert(`Erro ao buscar indicados: ${referralsError.message}. Verifique as políticas RLS.`)
+          return
+        }
+
+        // Filtrar manualmente os indicados
+        const filteredReferrals = (referralsData || []).filter(r => {
+          const refCode = r.referred_by_code?.trim()
+          const indication = r.indicacao?.trim()
+          const myCode = profile.referral_code?.trim()
+          const myName = profile.name?.trim()
+          
+          return refCode === myCode || indication === myName
+        })
+        
+        setReferrals(filteredReferrals)
+        
+        // Calcular estatísticas
+        const totalInvested = filteredReferrals.reduce(
+          (sum, ref) => sum + (ref.initial_balance || 0),
+          0
+        )
+        
+        const totalEarnings = filteredReferrals.reduce((sum, ref) => {
+          const profit = (ref.balance || 0) - (ref.initial_balance || 0)
+          return sum + (profit > 0 ? profit * 0.10 : 0)
+        }, 0)
+
+        setStats({
+          totalReferrals: filteredReferrals.length,
+          totalInvested,
+          totalEarnings
+        })
+        
+        setLoading(false)
         return
       }
 
-      const referrals = referralsData || []
+      const referrals = referralsByCode || []
       setReferrals(referrals)
 
       // 3. Calcular estatísticas
@@ -74,11 +116,16 @@ export default function ReferralPage() {
         (sum, ref) => sum + (ref.initial_balance || 0),
         0
       )
+      
+      const totalEarnings = referrals.reduce((sum, ref) => {
+        const profit = (ref.balance || 0) - (ref.initial_balance || 0)
+        return sum + (profit > 0 ? profit * 0.10 : 0)
+      }, 0)
 
       setStats({
-        totalReferrals: stats.total_referrals,
+        totalReferrals: referrals.length,
         totalInvested,
-        totalEarnings: stats.total_earnings
+        totalEarnings
       })
     } catch (error) {
       console.error('Erro geral ao buscar indicados:', error)
