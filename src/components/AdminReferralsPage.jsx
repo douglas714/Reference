@@ -35,7 +35,7 @@ export default function AdminReferralsPage() {
       const { data: clientsData, error: clientsError } = await supabase
         .from('profiles')
         .select('*')
-        .neq('email', 'douglasnoticias@gmail.com')
+        .not('email', 'in', '("douglasnoticias@gmail.com", "kenny.mateus@example.com")')
         .order('created_at', { ascending: false })
 
       if (clientsError) {
