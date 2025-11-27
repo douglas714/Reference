@@ -1,0 +1,18 @@
+/* Estilos específicos para AuthPage */
+.auth-page {
+  background: linear-gradient(135deg, #1a5f3f 0%, #2d7a5f 50%, #1a5f3f 100%);
+}
+
+.auth-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.auth-logo {
+  max-width: 120px;
+  height: auto;
+  border-radius: 8px;
+}
+
